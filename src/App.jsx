@@ -1,29 +1,5 @@
-import { Hero } from "@/sections/Hero";
-import { About } from "@/sections/About";
-import { Projects } from "@/sections/Projects";
-import { Experience } from "@/sections/Experience";
-import { Testimonials } from "@/sections/Testimonial";
-import { Contact } from "@/sections/Contact";
-import { Navbar } from "@/layout/Navbar";
-import { Footer } from "./layout/Footer";
+import { PortfolioV2 } from "./v2/PortfolioV2";
 
-
-function App() {
-  return (
-    <div className="min-h-screen overflow-x-hidden">
-      <Navbar />
-      <main>
-        <Hero />
-        <About />
-        <Projects />
-        <Experience />
-        <Testimonials />
-        <Contact />
-
-      </main>
-      <Footer />
-    </div>
-  );
+export default function App() {
+  return <PortfolioV2 />;
 }
-
-export default App;

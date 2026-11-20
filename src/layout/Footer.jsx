@@ -1,11 +1,3 @@
-import { Github, Linkedin, Twitter } from "lucide-react";
-
-const socialLinks = [
-    {icon: Github, href : "#", label : "GitHub",},
-    {icon: Linkedin, href: "#", label : "LinkedIn",},
-    {icon: Twitter, href: "#", label : "Twitter",}
-] 
-
 const footerLinks = [
     {href : "#", label: "About"},
     {href : "#", label: "Projects"},
