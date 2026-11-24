@@ -1,12 +1,16 @@
-import { createElement, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight,
-  CheckCircle2, Github, Linkedin, Mail, MapPin, Menu, Moon,
+  BrainCircuit, CheckCircle2, Code2, Database, Github, Linkedin, Mail, MapPin, Menu, Moon,
   Phone, Send, Sun, X,
 } from "lucide-react";
 import { experience, process, projects, skillGroups, skills, testimonials } from "./data";
 import "./portfolio-v2.css";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const sections = [
   { id: "work", label: "Work", number: "01" },
@@ -82,7 +86,7 @@ function Header() {
     <header className={`site-header ${scrolled ? "site-header--scrolled" : ""}`}>
       <nav className="nav-shell" aria-label="Main navigation">
         <a className="wordmark" href="#top" aria-label="Daniel Njoku, back to top">
-          DN<span>.</span>
+          <span className="wordmark-mark">DN</span><span className="wordmark-name">Daniel®</span>
         </a>
         <span className="nav-date">PORTFOLIO <span>·</span> 2026</span>
         <div className={`nav-links ${menuOpen ? "nav-links--open" : ""}`}>
@@ -112,13 +116,13 @@ function Header() {
         <button
           className="menu-toggle"
           type="button"
-          style={compactViewport ? { display: "grid", position: "fixed", top: 13, right: 19 } : undefined}
+          style={compactViewport ? { display: "flex", position: "fixed", top: 13, right: 19 } : undefined}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           onClick={() => setMenuOpen((open) => !open)}
         >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          {menuOpen ? <X size={21} /> : <><Menu size={20} /><span>Menu</span></>}
         </button>
       </nav>
       <div id="mobile-navigation" className={`mobile-nav ${menuOpen ? "mobile-nav--open" : ""}`} inert={!menuOpen}>
@@ -148,7 +152,37 @@ function Ticker() {
   );
 }
 
+function Preloader({ onComplete }) {
+  const loaderRef = useRef(null);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onComplete();
+      return undefined;
+    }
+    const context = gsap.context(() => {
+      gsap.set(".preloader-progress", { scaleX: 0, transformOrigin: "left center" });
+      gsap.timeline({ onComplete })
+        .to(".preloader-progress", { scaleX: 1, duration: 0.75, ease: "power2.inOut" })
+        .to(".preloader-mark", { y: -12, autoAlpha: 0, duration: 0.22, ease: "power2.in" }, "-=0.12")
+        .to(loaderRef.current, { yPercent: -100, duration: 0.7, ease: "power3.inOut" }, "+=0.06");
+    }, loaderRef);
+    return () => context.revert();
+  }, [onComplete]);
+
+  return (
+    <div className="preloader" ref={loaderRef} role="status" aria-label="Loading Daniel Njoku’s portfolio">
+      <div className="preloader-mark"><span>DN</span><i>·</i><small>DESIGNING THE DETAILS</small></div>
+      <div className="preloader-meter"><span className="preloader-progress" /><span>PORTFOLIO ’26</span></div>
+    </div>
+  );
+}
+
 function Hero() {
+  const mobileStickers = [
+    { project: projects[1], label: "AI / VIDEO", icon: <BrainCircuit size={13} /> },
+    { project: projects[0], label: "HEALTH / AI", icon: <Database size={13} /> },
+    { project: projects[2], label: "PYTHON / ML", icon: <Code2 size={13} /> },
+  ];
   return (
     <section className="hero section-wrap" id="top">
       <div className="hero-meta">
@@ -156,16 +190,27 @@ function Hero() {
         <p className="hero-location"><MapPin size={13} /> Lagos, Nigeria <span>·</span> 06° 27′ N</p>
       </div>
       <div className="hero-grid">
+        <div className="hero-mobile-stickers" aria-label="A few of Daniel’s software projects">
+          {mobileStickers.map(({ project, label, icon }, index) => (
+            <a className={`hero-sticker hero-sticker--${index + 1}`} href="#work" key={project.number} aria-label={`${project.title}, ${project.category}`}>
+              <img src={project.image} alt="" />
+              <span className="hero-sticker-label">{icon}{label}</span>
+            </a>
+          ))}
+          <span className="hero-code-sticker"><Code2 size={18} /><span>{"{ }"}</span></span>
+        </div>
         <div className="hero-copy">
           <p className="hero-intro" data-reveal>Hi, I’m Daniel<span className="accent-dot">.</span></p>
           <h1 data-reveal>
-            I build reliable<br />
-            <em>digital systems</em><br />
-            for what’s next.
+            <span className="hero-title-desktop">I build reliable<br /><em>digital systems</em><br />for what’s next.</span>
+            <span className="hero-title-mobile"><span>Hi, I’m Daniel.</span><span>A</span><em>Software Engineer</em></span>
           </h1>
           <div className="hero-summary" data-reveal>
             <p>Backend &amp; AI engineer shaping thoughtful products, dependable APIs, and machine-learning tools that solve real problems.</p>
-            <a className="text-link" href="#work">Explore selected work <ArrowDownRight size={17} /></a>
+            <div className="hero-actions">
+              <a className="hero-action hero-action--primary" href="#work">See selected work <ArrowDownRight size={17} /></a>
+              <a className="hero-action hero-action--secondary" href="/projects/DannysResumeAi.pdf" download>Download résumé <ArrowDown size={16} /></a>
+            </div>
           </div>
           <div className="hero-socials" data-reveal>
             <span>Find me</span>
@@ -207,22 +252,30 @@ function Work() {
   useEffect(() => {
     const stage = stageRef.current;
     const track = trackRef.current;
-    if (!stage || !track || window.matchMedia("(max-width: 760px)").matches) return undefined;
-    let frame = 0;
-    const update = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const rect = stage.getBoundingClientRect();
-        const travel = Math.max(0, track.scrollWidth - stage.clientWidth);
-        const range = Math.max(1, stage.offsetHeight - window.innerHeight);
-        const progress = Math.min(1, Math.max(0, -rect.top / range));
-        track.style.transform = `translate3d(${-travel * progress}px, 0, 0)`;
+    if (!stage || !track) return undefined;
+    const media = gsap.matchMedia();
+    media.add({ desktop: "(min-width: 761px)", reduceMotion: "(prefers-reduced-motion: reduce)" }, ({ conditions }) => {
+      if (!conditions.desktop || conditions.reduceMotion) return undefined;
+      const travel = () => Math.max(0, track.scrollWidth - stage.clientWidth);
+      gsap.to(track, {
+        x: () => -travel(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: stage,
+          pin: stage,
+          // The parent section receives a scroll-linked filter. Reparenting
+          // the pin while active keeps that filter from breaking fixed pinning.
+          pinReparent: true,
+          start: "top 16%",
+          end: () => `+=${travel()}`,
+          scrub: 0.65,
+          invalidateOnRefresh: true,
+          anticipatePin: 1,
+        },
       });
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+      return undefined;
+    });
+    return () => media.revert();
   }, []);
   return (
     <section className="work section-wrap section-space" id="work" aria-labelledby="work-title">
@@ -230,7 +283,7 @@ function Work() {
         A selection of products and systems across health, AI, data, and logistics.
       </SectionHeading>
       <div className="work-stage" ref={stageRef}>
-      <div className="project-grid" ref={trackRef}>
+        <div className="project-grid" ref={trackRef}>
         {projects.map((project, index) => (
           <article className={`project-card ${index === 0 ? "project-card--featured" : ""}`} key={project.number} data-reveal>
             <div className="project-art">
@@ -248,7 +301,7 @@ function Work() {
             </div>
           </article>
         ))}
-      </div>
+        </div>
       </div>
       <div className="work-footer" data-reveal><span>Have a project in mind?</span><a className="text-link" href="#contact">Let’s build it together <ArrowUpRight size={17} /></a></div>
     </section>
@@ -293,20 +346,20 @@ function Process() {
     const section = sectionRef.current;
     const curve = curveRef.current;
     if (!section || !curve) return undefined;
-    let frame = 0;
-    const update = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const rect = section.getBoundingClientRect();
-        const progress = Math.min(1, Math.max(0, (window.innerHeight - rect.top) / (window.innerHeight + rect.height)));
-        const lift = 28 + Math.sin(progress * Math.PI * 2) * 54;
-        curve.setAttribute("d", `M 0 100 C 120 ${100 - lift}, 200 ${100 + lift / 2}, 300 100 S 480 ${100 - lift}, 600 100 S 780 ${100 + lift}, 900 100 S 1080 ${100 - lift / 2}, 1200 100`);
+    const shape = { value: 0 };
+    const media = gsap.matchMedia();
+    media.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.to(shape, {
+        value: 1,
+        ease: "none",
+        onUpdate: () => {
+          const lift = 24 + Math.sin(shape.value * Math.PI * 2) * 52;
+          curve.setAttribute("d", `M 0 100 C 120 ${100 - lift}, 200 ${100 + lift / 2}, 300 100 S 480 ${100 - lift}, 600 100 S 780 ${100 + lift}, 900 100 S 1080 ${100 - lift / 2}, 1200 100`);
+        },
+        scrollTrigger: { trigger: section, start: "top 78%", end: "bottom 30%", scrub: 0.7 },
       });
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+    });
+    return () => media.revert();
   }, []);
   return (
     <section className="process section-wrap section-space" ref={sectionRef} aria-labelledby="process-title">
@@ -456,7 +509,37 @@ function Footer() {
 }
 
 export function PortfolioV2() {
+  const [isPreloading, setIsPreloading] = useState(true);
+  const finishPreload = useCallback(() => setIsPreloading(false), []);
   useReveal();
+  useEffect(() => {
+    if (isPreloading || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const sectionsToSoften = gsap.utils.toArray(".portfolio-v2 main > section");
+    const context = gsap.context(() => {
+      sectionsToSoften.forEach((section) => {
+        gsap.fromTo(section,
+          { filter: "blur(0px)", opacity: 1 },
+          {
+            filter: "blur(8px)", opacity: 0.2, ease: "none",
+            scrollTrigger: {
+              trigger: section,
+              start: "bottom 24%",
+              end: "top top",
+              scrub: true,
+              invalidateOnRefresh: true,
+            },
+          },
+        );
+      });
+    });
+    const refresh = () => ScrollTrigger.refresh();
+    document.fonts?.ready.then(refresh);
+    window.addEventListener("load", refresh, { once: true });
+    return () => {
+      window.removeEventListener("load", refresh);
+      context.revert();
+    };
+  }, [isPreloading]);
   useEffect(() => {
     const id = window.location.hash.slice(1);
     const target = id && document.getElementById(id);
@@ -468,6 +551,7 @@ export function PortfolioV2() {
   return (
     <div className="portfolio-v2">
       <a className="skip-link" href="#main-content">Skip to content</a>
+      {isPreloading && <Preloader onComplete={finishPreload} />}
       <Header />
       <main id="main-content">
         <Hero />
